@@ -7,8 +7,9 @@ LINUX ENVIRONMENT VERIFICATION REPORT
    Command Executed: whoami && groups
    
    Output:
-ubuntu adm cdrom sudo dip plugdev users lpadmin sambashare
-   Observation:
+coder
+coder sudo
+Observation:
    This command displays the current user's real and effective user IDs (UID) and group IDs (GID). It confirms exactly which account is logged into the system and lists all supplementary security groups the user belongs to. Verifying this ensures that the account has the appropriate privileges and group memberships required to access specific company resources.
 
 ----------------------------------------------------------------------
@@ -27,7 +28,7 @@ ubuntu adm cdrom sudo dip plugdev users lpadmin sambashare
    Command Executed: pwd
    
    Output:
-/home/ubuntu   
+/home/coder
    Observation:
    The pwd (Print Working Directory) command outputs the full, absolute path of the directory the user is currently operating in within the file system hierarchy. This provides a definitive reference point for navigating the system and executing tasks. Knowing the exact directory prevents errors when creating files, running scripts, or referencing relative file paths.
 
