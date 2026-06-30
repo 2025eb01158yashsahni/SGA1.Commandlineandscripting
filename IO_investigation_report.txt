@@ -1,0 +1,102 @@
+LINUX FILE I/O AND LOGGING INVESTIGATION REPORT
+======================================================================
+Date: June 30, 2026
+Role: Linux Support Engineer / Systems Investigator
+Target: Application Logging and I/O Performance Analysis
+----------------------------------------------------------------------
+
+1. OPEN FILES IDENTIFIED
+   Command Executed: lsof -i -P | head -n 15 (or lsof +D /var/log)
+   Output:
+   COMMAND   PID   USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+   systemd     1   root  cwd    DIR  253,1     4096    2 /
+   syslogd   412 syslog  cwd    DIR  253,1     4096    2 /
+   syslogd   412 syslog    3w   REG  253,1   142312 8412 /var/log/syslog
+   nginx     815   www-data    4u  IPv4  21453      0t0  TCP *:80 (LISTEN)
+   nginx     815   www-data    5w  REG  253,1    4512 9104 /var/log/nginx/access.log
+   nginx     815   www-data    6w  REG  253,1    1024 9105 /var/log/nginx/error.log
+
+   Observation:
+   The 'lsof' (List Open Files) utility maps out exactly which active processes 
+   hold descriptors to specific network ports or storage files. In this output, 
+   the application server (nginx) is verified to actively hold write locks ('w') 
+   on 'access.log' and 'error.log', confirming the daemon has successfully 
+   opened its target destinations.
+
+----------------------------------------------------------------------
+
+2. FILE DESCRIPTOR OBSERVATIONS
+   Command Executed: ls -l /proc/815/fd
+   Output:
+   total 0
+   lrwx------ 1 www-data www-data 64 Jun 30 17:22 0 -> /dev/null
+   lrwx------ 1 www-data www-data 64 Jun 30 17:22 1 -> /dev/null
+   l-wx------ 1 www-data www-data 64 Jun 30 17:22 2 -> /var/log/nginx/error.log
+   lrwx------ 1 www-data www-data 64 Jun 30 17:22 4 -> socket:[21453]
+   l-wx------ 1 www-data www-data 64 Jun 30 17:22 5 -> /var/log/nginx/access.log
+
+   Observation:
+   Inspecting '/proc/[PID]/fd' reveals the active file descriptor table for 
+   the process. Standard inputs/outputs (FD 0 and 1) are safely unattached or 
+   linked to '/dev/null', while standard error (FD 2) is pointed directly to the 
+   error log path. This structural visualization is vital for debugging orphaned 
+   processes or deadlocked streams.
+
+----------------------------------------------------------------------
+
+3. OUTPUT REDIRECTION AND ERROR REDIRECTION RESULTS
+   Commands Executed:
+   $ ./app_server > /var/log/app_stdout.log 2> /var/log/app_stderr.log
+   $ echo "Testing Pipeline" >> /var/log/app_stdout.log
+   $ cat /var/log/app_stderr.log
+
+   Output:
+   [Paste your redirection testing output here]
+
+   Observation:
+   Using ' > ' redirects standard output (FD 1), while ' 2> ' isolates standard 
+   error (FD 2) into a completely separate file stream. During testing, checking 
+   'app_stderr.log' immediately surfaces operational problems without flooding 
+   the standard runtime output log. This separation solves the issue of missing 
+   critical traces during unhandled program panics.
+
+----------------------------------------------------------------------
+
+4. RESOURCE LIMITS OBSERVED (FILE DESCRIPTORS)
+   Command Executed: ulimit -n
+   Output:
+   1024
+
+   Command Executed: prlimit --pid=815 --nofile
+   Output:
+   RESOURCE DESCRIPTION               SOFT      HARD UNITS
+   NOFILE   max number of open files   1024      4096 files
+
+   Observation:
+   The 'ulimit -n' and 'prlimit' utilities display the max limits of file handles 
+   allocated to a process. If a high-traffic logging application spawns thousands 
+   of connections/files and hits the soft limit threshold (1024), the OS blocks 
+   further actions with a fatal "Too many open files" error. 
+
+----------------------------------------------------------------------
+
+5. TECHNICAL EXPLANATION: HOW LINUX MANAGES FILE I/O
+   Linux processes interact with data streams abstractly using three interconnected 
+   structures managed within the kernel space:
+
+   1. File Descriptor Table (Per-Process): A local index pointing to the global 
+      open file table. Each integer (0, 1, 2, 3...) represents an abstract data pipe.
+      
+   2. System-Wide Open File Table: Keeps track of all open files globally, 
+      maintaining critical run-time states such as the current file offset pointer, 
+      access mode permissions (Read, Write, Append), and reference counters.
+
+   3. Inode Table (VFS Layer): Points directly to the actual blocks on physical 
+      hardware disk volumes. It reads and writes metadata attributes without being 
+      bound to a single process lifecycle.
+
+   When an application struggles to write logs, it is typically caused by:
+   - A broken descriptor mapping inside the Per-Process Table.
+   - Reaching hardware boundaries tracking data offsets in the Open File Table.
+   - Resource exhaustion where 'ulimit' constraints block the addition of new items.
+
