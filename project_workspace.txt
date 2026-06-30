@@ -1,0 +1,93 @@
+======================================================================
+SECURE PROJECT WORKSPACE CONFIGURATION REPORT
+======================================================================
+Date: June 30, 2026
+Role: Linux Support Engineer
+----------------------------------------------------------------------
+
+1. DIRECTORY STRUCTURE CREATED
+   The following secure directory layout was established under the /opt directory
+   to isolate project assets:
+   
+   /opt/project_workspace/
+   ├── docs/      (For project specifications and documentation)
+   ├── src/       (For source code and scripts)
+   └── archive/   (For legacy files and backups)
+
+   Command Executed: tree /opt/project_workspace/ (or ls -R /opt/project_workspace/)
+   Output:
+   [Paste your directory layout command output here]
+
+   Observation:
+   The directory layout is modularized to cleanly separate code, documentation, 
+   and historical backups. Creating this dedicated hierarchy allows targeted 
+   access control policies to be enforced at the root level, which cascade downward.
+
+----------------------------------------------------------------------
+
+2. UMASK VALUE USED
+   Command Executed: umask
+   Output:
+   [Paste your umask output here, e.g., 0022]
+
+   Observation:
+   The system umask determines the default permissions assigned to newly created 
+   files and directories. A default umask of 0022 strips write permissions from 
+   groups and others; understanding this value explains why explicit chmod overrides 
+   are required to allow collaborative group write-access within the project workspace.
+
+----------------------------------------------------------------------
+
+3. FILE PERMISSIONS BEFORE AND AFTER MODIFICATION
+
+   BEFORE MODIFICATION:
+   Command Executed: ls -ld /opt/project_workspace
+   Output:
+   [Paste initial ls -ld output here, e.g., drwxr-xr-x 5 root root 4096 ... ]
+
+   AFTER MODIFICATION:
+   Command Executed: sudo chmod -R 2770 /opt/project_workspace && ls -ld /opt/project_workspace
+   Output:
+   [Paste updated ls -ld output here, e.g., drwxrws--- 5 root project_team 4096 ... ]
+
+   Observation:
+   Initially, the directory allowed world-read access (r-x for others), posing a data leak 
+   risk. After applying 'chmod 2770', permissions changed to 'drwxrws---'. This restricts 
+   all external accounts ('others') from entering or viewing the directory while cementing 
+   full read, write, and execute privileges for authorized team members.
+
+----------------------------------------------------------------------
+
+4. OWNERSHIP DETAILS
+   Command Executed: ls -l /opt/project_workspace
+   Output:
+   [Paste your detailed ls -l output showing user and group ownership here]
+
+   Observation:
+   The ownership was shifted from root-exclusive control to 'root:project_team'. 
+   Critically, the 's' in the group execution slot indicates the SetGID bit is active. 
+   This configuration ensures that any new subfolder or file generated inside this workspace 
+   automatically inherits 'project_team' as its group owner, sustaining continuous collaboration.
+
+----------------------------------------------------------------------
+
+5. EXPLANATION OF HOW PERMISSIONS PROTECT PROJECT DATA
+   The implemented permission scheme protects project data through three distinct layers:
+   
+   * Confidentiality (Isolation): By setting the final octal digit to 0 (---), users who 
+     are not the owner and not in the 'project_team' group are strictly prohibited from 
+     reading, writing, or traversing the directory. This thwarts internal espionage and 
+     accidental data exposure.
+     
+   * Integrity (Collaborative Controls): Assigning write permissions ('w') to the 
+     'project_team' group allows designated engineers to modify, update, and manage files 
+     without needing administrative 'sudo' privileges, creating a frictionless workflow.
+     
+   * Continuity (SetGID Bit enforcement): Standard Linux behavior assigns new files to the 
+     primary group of the user who created them. Enforcing the SetGID bit overrides this, 
+     making sure all new assets stay group-accessible automatically, preventing "permission 
+     denied" obstacles among teammates.
+
+======================================================================
+END OF REPORT
+======================================================================
