@@ -4,11 +4,10 @@ LINUX ENVIRONMENT VERIFICATION REPORT
 ----------------------------------------------------------------------
 
 1. USERNAME AND GROUPS ASSOCIATED WITH YOUR ACCOUNT
-   Command Executed: id
+   Command Executed: whoami && groups
    
    Output:
-   [Paste your 'id' command terminal output here]
-   
+ubuntu adm cdrom sudo dip plugdev users lpadmin sambashare
    Observation:
    This command displays the current user's real and effective user IDs (UID) and group IDs (GID). It confirms exactly which account is logged into the system and lists all supplementary security groups the user belongs to. Verifying this ensures that the account has the appropriate privileges and group memberships required to access specific company resources.
 
@@ -18,8 +17,7 @@ LINUX ENVIRONMENT VERIFICATION REPORT
    Command Executed: echo $SHELL
    
    Output:
-   [Paste your 'echo $SHELL' command terminal output here]
-   
+/bin/bash
    Observation:
    This command prints the value of the environment variable $SHELL, which defines the absolute path of the user's current command-line interpreter. Identifying the active shell (such as /bin/bash or /bin/zsh) is crucial because different shells have unique syntax, configuration files, and scripting capabilities. Knowing the shell ensures that future scripts and commands run predictably without compatibility issues.
 
@@ -29,8 +27,7 @@ LINUX ENVIRONMENT VERIFICATION REPORT
    Command Executed: pwd
    
    Output:
-   [Paste your 'pwd' command terminal output here]
-   
+/home/ubuntu   
    Observation:
    The pwd (Print Working Directory) command outputs the full, absolute path of the directory the user is currently operating in within the file system hierarchy. This provides a definitive reference point for navigating the system and executing tasks. Knowing the exact directory prevents errors when creating files, running scripts, or referencing relative file paths.
 
@@ -40,8 +37,7 @@ LINUX ENVIRONMENT VERIFICATION REPORT
    Command Executed: ls -la
    
    Output:
-   [Paste your 'ls -la' command terminal output here]
-   
+given screenshot
    Observation:
    This command lists all files and directories in the current workspace, including hidden files (those starting with a dot) and detailed metadata like permissions, ownership, size, and modification dates. Running it maps out the immediate environment and identifies existing project files or configurations. It is an essential step for verifying that the workspace is correctly populated and structured before starting work.
 
@@ -51,8 +47,7 @@ LINUX ENVIRONMENT VERIFICATION REPORT
    Command Executed: ping -c 4 8.8.8.8
    
    Output:
-   [Paste your 'ping' command terminal output here]
-   
+given screenshot
    Observation:
    The ping command sends four ICMP echo request packets to a reliable public IP address (or internal gateway) to test network reachability and latency. Analyzing the output verifies that the local network interface, routing tables, and external internet connection are functioning properly. A 0% packet loss result guarantees that the Linux environment can successfully communicate with external and company network resources.
 
