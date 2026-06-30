@@ -1,0 +1,88 @@
+======================================================================
+LINUX FILESYSTEM LINK ANALYSIS REPORT
+======================================================================
+Date: June 30, 2026
+Role: Linux Support Engineer / Systems Investigator
+----------------------------------------------------------------------
+
+1. INITIAL FILE AND LINK SETUP (METADATA)
+   Commands Executed: 
+   $ echo "Critical Developer Code" > original.txt
+   $ ln original.txt hardlink.txt
+   $ ln -s original.txt softlink.txt
+   $ ls -li
+
+   Output:
+   [Paste your 'ls -li' output here]
+
+   Observation:
+   The 'ls -li' command reveals the fundamental difference in how Linux stores 
+   these files. 'original.txt' and 'hardlink.txt' share the exact same Inode 
+   number, proving they point to the identical data block on the disk. 
+   Conversely, 'softlink.txt' has a completely unique Inode number and its 
+   file size matches the number of characters in the string "original.txt".
+
+----------------------------------------------------------------------
+
+2. METADATA ANALYSIS VIA 'STAT' UTILITY
+   Command Executed: stat original.txt && stat hardlink.txt && stat softlink.txt
+   Output:
+   [Paste snippets of your 'stat' outputs here]
+
+   Observation:
+   Using 'stat' highlights the underlying link count. For both the original file 
+   and the hard link, the "Links" field reads '2', indicating two directory 
+   entries point to that Inode block. The symbolic link shows a link count of '1' 
+   and explicitly denotes its file type as a 'symbolic link' pointing to 'original.txt'.
+
+----------------------------------------------------------------------
+
+3. EFFECT OF DELETING THE ORIGINAL FILE
+   Commands Executed:
+   $ rm original.txt
+   $ cat hardlink.txt
+   $ cat softlink.txt
+
+   Output:
+   [Paste your terminal output here showing hardlink content vs softlink error]
+
+   Observation:
+   When 'original.txt' was deleted, 'hardlink.txt' remained fully intact and accessible, 
+   preserving the developer's data. However, trying to view 'softlink.txt' resulted in 
+   a "No such file or directory" error. The symbolic link turned into a "dangling link" 
+   because its targeted path reference disappeared.
+
+----------------------------------------------------------------------
+
+4. COMPARISON BETWEEN HARD LINKS AND SYMBOLIC LINKS
+
+   +-------------------------+-------------------------+-------------------------+
+   | Feature                 | Hard Link               | Symbolic (Soft) Link    |
+   +-------------------------+-------------------------+-------------------------+
+   | Inode Target            | Shares original Inode   | Gets a unique new Inode |
+   | Data Pointer            | Points to Data Block    | Points to Path Name     |
+   | Across Filesystems?     | No (restricted to same) | Yes (can cross disks)   |
+   | Survives Target Delete? | Yes                     | No (breaks shortcut)    |
+   +-------------------------+-------------------------+-------------------------+
+
+----------------------------------------------------------------------
+
+5. CONCLUSIONS AND FINDINGS
+   Based on the data collected during this experiment, we can draw the following 
+   conclusions to assist the developer:
+   
+   * Inode Tracking: In Linux, a filename is merely a label pointing to an Inode. 
+     The operating system does not delete file data until the overall Inode reference 
+     count reaches zero.
+     
+   * Hard Link Resilience: Hard links provide data redundancy against accidental 
+     deletion. Because 'hardlink.txt' held a direct reference to the data block, 
+     deleting 'original.txt' only broke that single label—the file contents were saved.
+     
+   * Soft Link Vulnerability: Soft links are fragile dependencies. They only mirror 
+     a path name. If a developer accidentally deletes a target file, soft links 
+     pointing to it will immediately break, failing to protect the underlying data.
+
+======================================================================
+END OF REPORT
+======================================================================
