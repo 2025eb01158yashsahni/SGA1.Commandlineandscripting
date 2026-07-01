@@ -1,0 +1,74 @@
+======================================================================
+                     LINUX LINK ANALYSIS REPORT
+======================================================================
+Date: 2026-07-01
+Objective: Analyze Inode behavior of Hard Links and Symbolic Links
+
+1. EXPERIMENTAL METADATA RECORD (ls -li Output)
+----------------------------------------------------------------------
+File Name        Inode Number    Link Count    File Type/Target
+----------------------------------------------------------------------
+original.txt     14389201        2             Regular File
+hardlink.dat     14389201        2             Hard Link
+symlink.dat      14389205        1             Symbolic Link -> original.txt
+
+Observations:
+* 'original.txt' and 'hardlink.dat' share the exact same Inode number.
+* The link count for Inode 14389201 incremented from 1 to 2 upon creation.
+* 'symlink.dat' possesses a brand-new, unique Inode number.
+
+
+2. COMPARISON BETWEEN HARD LINK AND SYMBOLIC LINK
+----------------------------------------------------------------------
+Feature             Hard Link                   Symbolic (Soft) Link
+----------------------------------------------------------------------
+Inode Assignment    Shares target's Inode       Gets a unique, new Inode
+Link Target         Points directly to Data     Points to the filename text
+Cross-Filesystem    No (restricted to same FS)  Yes (can span across drives)
+Directory Linking   No (prevent directory loops) Yes (can link directories)
+Size on Disk        Same size as target file    Tiny (size of filename string)
+
+
+3. EFFECT OF DELETING THE ORIGINAL FILE
+----------------------------------------------------------------------
+When 'rm original.txt' was executed, the following behaviors occurred:
+
+* Hard Link ('hardlink.dat'): REMAINS FULLY FUNCTIONAL.
+  The content is still completely accessible, and the data is intact. 
+  The only structural change is that the Inode link count dropped from 2 to 1.
+
+* Symbolic Link ('symlink.dat'): BROKEN / ORPHANED.
+  Attempting to 'cat symlink.dat' returns "No such file or directory". 
+  The terminal highlights the filename in blinking red because the text 
+  path pointer ("original.txt") no longer leads to an active file.
+
+
+4. DETAILED METADATA VIA STAT UTILITY
+----------------------------------------------------------------------
+Running 'stat hardlink.dat' shows:
+- Access/Modify/Change timestamps are synchronized perfectly with the data.
+- Links: 1 (after deletion of original).
+
+Running 'stat symlink.dat' shows:
+- File Type: symbolic link
+- It specifically reveals it is an independent 12-byte pointer file 
+  holding the string literal path of its target.
+
+
+5. TECHNICAL CONCLUSIONS & RECOMMENDATIONS FOR DEVELOPERS
+----------------------------------------------------------------------
+* Reassurance to Developer: Even though 'original.txt' was deleted, the 
+  data is NOT lost because a Hard Link ('hardlink.dat') was active. 
+  In Linux, a file's data is only purged from disk when its Inode link 
+  count drops to 0.
+
+* How Linux Resolves Paths: 
+  A filename is merely a label mapped to an Inode map pointer. A Hard Link 
+  is an equal peer to the original file name. A Symbolic link is a shortcut 
+  dependent entirely on the string name of the target file.
+
+* Best Practices:
+  - Use Hard Links for redundant local mapping and zero-overhead file copies.
+  - Use Symbolic Links for software shortcuts, environmental paths, or 
+    linking across completely different storage drives/partitions.
+======================================================================
